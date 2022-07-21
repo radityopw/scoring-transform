@@ -1,0 +1,105 @@
+#! /bin/bash
+# exit when any command fails
+set -e
+
+#force working directory on this file
+cd "$(dirname "$0")"
+
+## functions
+help(){
+
+	# Display Help
+	echo "Syntax: run data [-h]"
+	echo 
+	echo "options : "
+	echo "data	lokasi data csv"
+	echo "h 	print help"	
+
+}
+
+cleanup(){
+	rm $database
+	#echo $database
+}
+
+
+## setting global variables
+
+declare -i number_params
+
+
+number_params=0
+database=""
+f_line=""
+data=""
+
+## input 
+## input 1 : data penempatan
+## input 2 : data peserta
+
+while getopts ":h" option; do
+	case $option in
+		h) # display Help
+			help
+			exit
+			;;
+		\?) # invalid options
+			help
+			exit
+			;;
+	esac
+done
+
+if [ $# -eq 2 ] 
+then
+	number_params=$#
+	database=$1
+	data=$2
+
+else
+	help
+	exit 1
+fi
+
+## preparasi data
+## 1. buat temporary file
+## 2. copy database.db ke point 1 -> database_aktif.db
+cp database.db $database
+
+## cek data 
+## 1.cek format data 
+
+# cek data 
+f_line=$(head -n 1 $data | tr -d " " | tr '[:upper:]' '[:lower:]')
+
+if [[ $f_line != "record_id,nilai" ]]
+then
+	echo "data  memiliki header {$f_line}, seharusnya {record_id,nilai}" >&2
+	exit 1
+fi
+
+
+unset f_line
+
+## import data ke dalam database
+## 1. import data ke database_aktif.db
+## jika terdapat error maka system halted
+
+sqlite3 $database "DELETE FROM data; DELETE FROM _input;"
+
+sqlite3 $database ".import --csv --skip 1 "$data" _input"
+
+## proses perhitungan
+
+sqlite3 $database "INSERT INTO data(record_id,nilai)
+		   SELECT record_id,nilai
+		   FROM _input;"
+
+
+## output list nomor peserta dan kode penempatan 
+
+sqlite3 $database "SELECT record_id,nilai
+	           FROM data;" 
+
+cleanup
+exit 0
