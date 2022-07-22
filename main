@@ -95,10 +95,26 @@ sqlite3 $database "INSERT INTO data(record_id,nilai)
 		   SELECT record_id,nilai
 		   FROM _input;"
 
+rata_semua=$(sqlite3 $database "SELECT avg(nilai) FROM data")
+stdev_semua=$(sqlite3 $database "SELECT nilai FROM data" | datamash pstdev 1)
+
+
+sqlite3 $database "UPDATE data SET rata_semua="$rata_semua", stdev_semua="$stdev_semua";"
+
+unset rata_semua
+unset stdev_semua
+
+sqlite3 $database "UPDATE data 
+		   SET zscore = (nilai - rata_semua)/stdev_semua"
+
+sqlite3 $database "UPDATE data 
+		   SET   ceeb = (zscore * 100) + 500
+		        ,t_score = (zscore * 10) + 50"
+
 
 ## output list nomor peserta dan kode penempatan 
 
-sqlite3 $database "SELECT record_id,nilai
+sqlite3 $database "SELECT record_id,nilai,zscore,ceeb,t_score
 	           FROM data;" 
 
 cleanup
