@@ -1,5 +1,9 @@
 #!/bin/bash
 
+current_LC_NUMERIC=$LC_NUMERIC
+
+export LC_NUMERIC="en_US.UTF-8"
+
 # pass all arguments to the main script
 database=$(mktemp -p /tmp scoring.XXXXXX)
 
@@ -15,3 +19,5 @@ then
 	fi
 
 fi
+
+export LC_NUMERIC=$current_LC_NUMERIC
