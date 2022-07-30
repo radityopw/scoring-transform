@@ -87,13 +87,14 @@ unset f_line
 
 sqlite3 $database "DELETE FROM data; DELETE FROM _input;"
 
-sqlite3 $database ".import --csv --skip 1 "$data" _input"
+sqlite3 -csv $database ".import "$data" _input"
 
 ## proses perhitungan
 
 sqlite3 $database "INSERT INTO data(record_id,nilai)
 		   SELECT record_id,nilai
-		   FROM _input;"
+		   FROM _input
+		   WHERE record_id <> 'record_id';"
 
 rata_semua=$(sqlite3 $database "SELECT avg(nilai) FROM data")
 stdev_semua=$(sqlite3 $database "SELECT nilai FROM data" | datamash pstdev 1)
@@ -114,7 +115,7 @@ sqlite3 $database "UPDATE data
 
 ## output list nomor peserta dan kode penempatan 
 
-sqlite3 $database "SELECT record_id,nilai,zscore,ceeb,t_score
+sqlite3 -csv $database "SELECT record_id,nilai,zscore,ceeb,t_score
 	           FROM data;" 
 
 cleanup
